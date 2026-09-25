@@ -1,0 +1,52 @@
+# macOS
+
+.DS_Store
+
+# Xcode / SwiftPM
+
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+Package.resolved
+
+# Python
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+
+# Environment
+
+.env
+.env.*
+!.env.example
+
+# Firebase / Google credentials
+
+**/GoogleService-Info.plist
+**/google-services.json
+**/*service-account*.json
+**/*credentials*.json
+.firebase/
+.firebaserc.local
+
+# Local app configuration
+
+*.local.toml
+*.local.json
+firebase_app_utilities.local.toml
+
+# Logs / exports
+
+*.log
+exports/
+reports/

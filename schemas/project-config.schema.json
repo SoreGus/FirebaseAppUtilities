@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firebase-app-utilities.local/schemas/project-config.schema.json",
+  "title": "FirebaseAppUtilities Project Configuration",
+  "type": "object",
+  "required": ["project"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["project_id"],
+      "properties": {
+        "project_id": { "type": "string", "minLength": 1 },
+        "environment": { "type": "string", "default": "development" },
+        "credentials": { "type": ["string", "null"] }
+      }
+    },
+    "analytics": {
+      "type": "object",
+      "properties": {
+        "collection": { "type": "string", "default": "analytics_events" }
+      }
+    },
+    "functions": {
+      "type": "object",
+      "properties": {
+        "base_url": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+[project]
+project_id = "your-firebase-project-id"
+environment = "development"
+# credentials = "/absolute/path/to/service-account.json"
+
+[analytics]
+collection = "analytics_events"
+
+[functions]
+# base_url = "https://us-central1-your-project.cloudfunctions.net"

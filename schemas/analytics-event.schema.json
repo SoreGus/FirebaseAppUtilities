@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firebase-app-utilities.local/schemas/analytics-event.schema.json",
+  "title": "FirebaseAppUtilities Analytics Event",
+  "type": "object",
+  "required": ["name", "timestamp", "platform", "environment", "properties"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "timestamp": {},
+    "sessionId": { "type": ["string", "null"] },
+    "userId": { "type": ["string", "null"] },
+    "platform": { "type": "string" },
+    "appVersion": { "type": ["string", "null"] },
+    "buildNumber": { "type": ["string", "null"] },
+    "environment": { "type": "string" },
+    "properties": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "integer", "boolean", "null"]
+      }
+    }
+  },
+  "additionalProperties": true
+}
