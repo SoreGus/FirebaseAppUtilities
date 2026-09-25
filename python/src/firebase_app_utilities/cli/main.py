@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
 from datetime import date, datetime
 import json
 from pathlib import Path
@@ -17,7 +16,14 @@ def _json_default(value: Any) -> str:
 
 
 def _print_json(value: Any) -> None:
-    print(json.dumps(value, indent=2, ensure_ascii=False, default=_json_default))
+    print(
+        json.dumps(
+            value,
+            indent=2,
+            ensure_ascii=False,
+            default=_json_default,
+        )
+    )
 
 
 def _add_config_argument(parser: argparse.ArgumentParser) -> None:
@@ -35,31 +41,49 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    status = subparsers.add_parser("status", help="Show the connected project configuration")
+    status = subparsers.add_parser(
+        "status",
+        help="Show the connected project configuration",
+    )
     _add_config_argument(status)
 
-    collections = subparsers.add_parser("collections", help="List Firestore collections")
+    collections = subparsers.add_parser(
+        "collections",
+        help="List Firestore collections",
+    )
     _add_config_argument(collections)
 
-    documents = subparsers.add_parser("documents", help="List documents from a collection")
+    documents = subparsers.add_parser(
+        "documents",
+        help="List documents from a collection",
+    )
     documents.add_argument("collection")
     documents.add_argument("--limit", type=int, default=50)
     _add_config_argument(documents)
 
-    analytics = subparsers.add_parser("analytics", help="Query custom analytics events")
+    analytics = subparsers.add_parser(
+        "analytics",
+        help="Query custom analytics events",
+    )
     analytics.add_argument("--event")
     analytics.add_argument("--limit", type=int, default=100)
     analytics.add_argument("--counts", action="store_true")
     analytics.add_argument("--days", type=int)
     _add_config_argument(analytics)
 
-    function = subparsers.add_parser("function", help="Call an HTTP function endpoint")
+    function = subparsers.add_parser(
+        "function",
+        help="Call an HTTP function endpoint",
+    )
     function.add_argument("name")
     function.add_argument("--method", default="POST")
     function.add_argument("--json", dest="json_payload")
     _add_config_argument(function)
 
-    gui = subparsers.add_parser("gui", help="Open the local GUI")
+    gui = subparsers.add_parser(
+        "gui",
+        help="Open the reusable local GUI",
+    )
     _add_config_argument(gui)
 
     return parser
@@ -72,6 +96,7 @@ def _load_project(path: str) -> FirebaseProject:
             f"Configuration not found: {config_path}. "
             "Copy examples/firebase_app_utilities.example.toml and customize it."
         )
+
     return FirebaseProject.from_toml(config_path)
 
 
@@ -80,13 +105,16 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        if args.command == "gui":
-            from ..gui.app import run_gui
-
-            run_gui(args.config)
-            return 0
-
         project = _load_project(args.config)
+
+        if args.command == "gui":
+            from ..gui import FirebaseUtilitiesApp
+
+            FirebaseUtilitiesApp(
+                project=project,
+                config_path=args.config,
+            ).run()
+            return 0
 
         if args.command == "status":
             _print_json(project.status())
@@ -107,7 +135,11 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "analytics":
             if args.counts:
-                _print_json(project.analytics.count_by_name(days=args.days))
+                _print_json(
+                    project.analytics.count_by_name(
+                        days=args.days,
+                    )
+                )
             else:
                 _print_json(
                     project.analytics.list_events(
@@ -118,16 +150,22 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "function":
-            payload = json.loads(args.json_payload) if args.json_payload else None
+            payload = (
+                json.loads(args.json_payload)
+                if args.json_payload
+                else None
+            )
             response = project.functions.request(
                 args.name,
                 method=args.method,
                 json=payload,
             )
+
             try:
                 _print_json(response.json())
             except ValueError:
                 print(response.text)
+
             return 0
 
     except Exception as error:

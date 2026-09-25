@@ -1,3 +1,3 @@
-from .app import run_gui
+from .app import FirebaseUtilitiesApp
 
-run_gui()
+FirebaseUtilitiesApp().run()

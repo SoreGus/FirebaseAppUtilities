@@ -2,23 +2,20 @@
 
 Reusable Python library and local tooling for Firebase-backed applications.
 
-## Features
+It provides:
 
-- connect with Application Default Credentials or a service-account JSON file;
-- load project configuration from TOML;
-- inspect Firestore collections and documents;
-- query Firestore-backed custom analytics events;
-- call HTTP Firebase/Google Cloud Functions endpoints;
-- expose the same operations through a CLI;
-- expose a lightweight local Tk GUI.
+- Firebase project connection and configuration;
+- Firestore inspection;
+- Firestore-backed custom analytics;
+- HTTP Functions access;
+- CLI tooling;
+- a reusable and extensible Tk GUI.
 
-The CLI and GUI are deliberately thin layers over the Python library. Project-specific tooling can import the same library directly.
+The CLI and GUI are thin layers over the same Python library.
 
-## Repository environment
+## Environment
 
-The Python package uses the repository-level environment configuration.
-
-Expected structure:
+The Python package uses the repository-level:
 
 ```text
 FirebaseAppUtilities/
@@ -28,7 +25,11 @@ FirebaseAppUtilities/
 └── python/
 ```
 
-The `.env` file defines the Python interpreter used to create the shared virtual environment.
+Create the local environment file from the repository root:
+
+```bash
+cp .env-example .env
+```
 
 Example:
 
@@ -36,76 +37,33 @@ Example:
 PYTHON_BIN=/opt/homebrew/bin/python3
 VENV_DIR=.venv
 FIREBASE_ENVIRONMENT=development
-
-# Optional
-# FIREBASE_PROJECT_ID=your-firebase-project-id
-# FIREBASE_CREDENTIALS=/absolute/path/to/service-account.json
 ```
-
-Create the local environment file from the repository root:
-
-```bash
-cp .env-example .env
-```
-
-The `.env` file is local and must not be committed.
 
 ## Install
 
-The recommended installation flow is from the repository root:
+Recommended:
 
 ```bash
 make setup
 ```
 
-This creates the shared virtual environment at:
+This creates the shared `.venv` and installs the package in editable mode.
 
-```text
-FirebaseAppUtilities/.venv
-```
-
-and installs the Python package in editable mode.
-
-You can also install only the Python package:
+You can also run:
 
 ```bash
 make python-install
 ```
 
-Or work directly from the Python directory:
+Or from `python/`:
 
 ```bash
-cd python
 make install
 ```
 
-The `python/Makefile` uses the same `.env` and `.venv` from the repository root.
-
-## Virtual environment
-
-The virtual environment is shared by the repository:
-
-```text
-../.venv
-```
-
-When inside the `python/` directory, activate it with:
-
-```bash
-source ../.venv/bin/activate
-```
-
-When working from the repository root:
-
-```bash
-source .venv/bin/activate
-```
-
-Activation is optional when using the provided Makefiles because they call the virtual environment executables directly.
-
 ## Configuration
 
-Firebase project-specific configuration can be stored in a local TOML file.
+Project-specific Firebase configuration is stored in TOML.
 
 Example:
 
@@ -124,24 +82,9 @@ base_url = "https://us-central1-your-project.cloudfunctions.net"
 
 `credentials` and `base_url` are optional.
 
-If `credentials` is omitted, Firebase Admin uses Google Application Default Credentials.
-
-Sensitive or machine-specific configuration should remain local and should not be committed.
-
-Examples include:
-
-```text
-firebase.local.toml
-firebase_app_utilities.local.toml
-```
+If `credentials` is omitted, Firebase Admin can use Application Default Credentials.
 
 ## CLI
-
-After installation, the CLI is available through:
-
-```bash
-firebase-app-utils
-```
 
 Show help:
 
@@ -149,17 +92,17 @@ Show help:
 firebase-app-utils --help
 ```
 
-Or through the Python Makefile:
+Or from the repository root:
 
 ```bash
-cd python
-make cli
+make python-cli
 ```
 
 Examples:
 
 ```bash
-firebase-app-utils status --config ../examples/firebase_app_utilities.example.toml
+firebase-app-utils status \
+    --config ./firebase.local.toml
 
 firebase-app-utils collections \
     --config ./firebase.local.toml
@@ -169,11 +112,8 @@ firebase-app-utils documents users \
     --config ./firebase.local.toml
 
 firebase-app-utils analytics \
-    --limit 50 \
-    --config ./firebase.local.toml
-
-firebase-app-utils analytics \
     --event song_generated \
+    --limit 50 \
     --config ./firebase.local.toml
 
 firebase-app-utils function myFunction \
@@ -187,23 +127,32 @@ firebase-app-utils gui \
 
 ## GUI
 
-Open the GUI from the repository root:
+The GUI is part of FirebaseAppUtilities and is designed to be reused by project-specific repositories.
+
+Open the generic GUI from the repository root:
 
 ```bash
 make python-gui
 ```
 
-Or directly from the Python directory:
+A consuming project can launch it with minimal code:
 
-```bash
-make gui
+```python
+from firebase_app_utilities import FirebaseProject
+from firebase_app_utilities.gui import FirebaseUtilitiesApp
+
+project = FirebaseProject.from_toml(
+    "firebase.local.toml"
+)
+
+FirebaseUtilitiesApp(
+    project=project
+).run()
 ```
 
-The GUI uses the same Python library as the CLI and can connect to project-specific Firebase configurations.
+Projects can extend the GUI with project-specific screens or actions while keeping generic Firebase functionality inside FirebaseAppUtilities.
 
 ## Library usage
-
-The package can be imported directly by other Python projects.
 
 ```python
 from firebase_app_utilities import FirebaseProject
@@ -223,43 +172,41 @@ print(
 )
 ```
 
-This is the preferred integration model for project-specific tooling.
-
-For example:
-
-```text
-ChordGenFirebase
-        |
-        | Python dependency
-        v
-firebase_app_utilities
-        |
-        v
-Firebase / Firestore
-```
-
 ## Project-specific tooling
 
-Projects such as `ChordGenFirebase` should depend on this package instead of copying FirebaseAppUtilities code.
+Projects such as `ChordGenFirebase` should depend on this package instead of copying its implementation.
 
-A project-specific repository may contain:
+Example:
 
 ```text
 ChordGenFirebase/
+├── config/
 ├── dashboards/
 ├── functions/
 ├── scripts/
-├── config/
+├── app.py
 └── pyproject.toml
 ```
 
-Reusable Firebase infrastructure belongs in `FirebaseAppUtilities`.
+The intended separation is:
 
-Application-specific Firebase logic belongs in repositories such as `ChordGenFirebase`.
+```text
+FirebaseAppUtilities
+    reusable Python API
+    Firebase services
+    CLI
+    reusable GUI
+
+ChordGenFirebase
+    project configuration
+    functions
+    dashboards
+    project-specific extensions
+```
 
 ## Make commands
 
-From the `python/` directory:
+From `python/`:
 
 ```bash
 make help
@@ -272,11 +219,9 @@ make build
 make clean
 ```
 
-These commands use:
+These commands use the shared:
 
 ```text
 ../.env
 ../.venv
 ```
-
-rather than creating a separate Python environment inside the `python/` directory.
