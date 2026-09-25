@@ -105,23 +105,30 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        project = _load_project(args.config)
-
         if args.command == "gui":
             from ..gui import FirebaseUtilitiesApp
 
-            FirebaseUtilitiesApp(
-                project=project,
-                config_path=args.config,
-            ).run()
+            config_path = Path(args.config).expanduser()
+
+            if config_path.exists():
+                FirebaseUtilitiesApp.from_toml(
+                    config_path
+                ).run()
+            else:
+                FirebaseUtilitiesApp().run()
+
             return 0
+
+        project = _load_project(args.config)
 
         if args.command == "status":
             _print_json(project.status())
             return 0
 
         if args.command == "collections":
-            _print_json(project.firestore.list_collections())
+            _print_json(
+                project.firestore.list_collections()
+            )
             return 0
 
         if args.command == "documents":
@@ -155,6 +162,7 @@ def main(argv: list[str] | None = None) -> int:
                 if args.json_payload
                 else None
             )
+
             response = project.functions.request(
                 args.name,
                 method=args.method,

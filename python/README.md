@@ -17,7 +17,7 @@ The CLI and GUI are thin layers over the same Python library.
 
 The Python package uses the repository-level:
 
-```text
+```text id="uj1g0x"
 FirebaseAppUtilities/
 ├── .env
 ├── .env-example
@@ -27,13 +27,13 @@ FirebaseAppUtilities/
 
 Create the local environment file from the repository root:
 
-```bash
+```bash id="kwm93f"
 cp .env-example .env
 ```
 
 Example:
 
-```env
+```env id="j2z9t1"
 PYTHON_BIN=/opt/homebrew/bin/python3
 VENV_DIR=.venv
 FIREBASE_ENVIRONMENT=development
@@ -41,23 +41,37 @@ FIREBASE_ENVIRONMENT=development
 
 ## Install
 
-Recommended:
+Recommended from the repository root:
 
-```bash
+```bash id="m0qzcb"
 make setup
 ```
 
-This creates the shared `.venv` and installs the package in editable mode.
+Setup validates:
 
-You can also run:
+- the configured Python executable;
+- Python version;
+- Tkinter availability required by the GUI.
 
-```bash
+If Tkinter is missing, setup stops and shows the matching installation hint.
+
+After validation, setup creates the shared `.venv` and installs the package in editable mode.
+
+You can validate the Python environment separately with:
+
+```bash id="418oty"
+make check-python
+```
+
+You can also install only the Python package:
+
+```bash id="qjt7xf"
 make python-install
 ```
 
 Or from `python/`:
 
-```bash
+```bash id="ai8ph9"
 make install
 ```
 
@@ -67,7 +81,7 @@ Project-specific Firebase configuration is stored in TOML.
 
 Example:
 
-```toml
+```toml id="mfu3y5"
 [project]
 project_id = "your-project-id"
 environment = "development"
@@ -88,19 +102,19 @@ If `credentials` is omitted, Firebase Admin can use Application Default Credenti
 
 Show help:
 
-```bash
+```bash id="r7q44t"
 firebase-app-utils --help
 ```
 
 Or from the repository root:
 
-```bash
+```bash id="t0ifuf"
 make python-cli
 ```
 
 Examples:
 
-```bash
+```bash id="y65fgr"
 firebase-app-utils status \
     --config ./firebase.local.toml
 
@@ -131,13 +145,13 @@ The GUI is part of FirebaseAppUtilities and is designed to be reused by project-
 
 Open the generic GUI from the repository root:
 
-```bash
+```bash id="viwky5"
 make python-gui
 ```
 
 A consuming project can launch it with minimal code:
 
-```python
+```python id="ab406t"
 from firebase_app_utilities import FirebaseProject
 from firebase_app_utilities.gui import FirebaseUtilitiesApp
 
@@ -154,7 +168,7 @@ Projects can extend the GUI with project-specific screens or actions while keepi
 
 ## Library usage
 
-```python
+```python id="hbzayf"
 from firebase_app_utilities import FirebaseProject
 
 project = FirebaseProject.from_toml(
@@ -178,7 +192,7 @@ Projects such as `ChordGenFirebase` should depend on this package instead of cop
 
 Example:
 
-```text
+```text id="fnn4pa"
 ChordGenFirebase/
 ├── config/
 ├── dashboards/
@@ -190,7 +204,7 @@ ChordGenFirebase/
 
 The intended separation is:
 
-```text
+```text id="fjs07m"
 FirebaseAppUtilities
     reusable Python API
     Firebase services
@@ -208,7 +222,7 @@ ChordGenFirebase
 
 From `python/`:
 
-```bash
+```bash id="d0u8hh"
 make help
 make venv
 make install
@@ -221,7 +235,7 @@ make clean
 
 These commands use the shared:
 
-```text
+```text id="egvcrv"
 ../.env
 ../.venv
 ```

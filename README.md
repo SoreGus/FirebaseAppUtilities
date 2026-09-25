@@ -12,7 +12,7 @@ The goal is to centralize reusable Firebase infrastructure so project-specific r
 
 ## Repository layout
 
-```text
+```text id="h2t0w0"
 FirebaseAppUtilities/
 ├── python/
 ├── swift/
@@ -27,7 +27,7 @@ FirebaseAppUtilities/
 
 ## Architecture
 
-```text
+```text id="160sw3"
 ChordGen
    |
    | Swift Package
@@ -51,13 +51,13 @@ ChordGenFirebase
 
 Create the local environment file:
 
-```bash
+```bash id="3nkbl8"
 cp .env-example .env
 ```
 
 Example:
 
-```env
+```env id="50ys9r"
 PYTHON_BIN=/opt/homebrew/bin/python3
 VENV_DIR=.venv
 FIREBASE_ENVIRONMENT=development
@@ -65,31 +65,41 @@ FIREBASE_ENVIRONMENT=development
 
 Then run:
 
-```bash
+```bash id="6f4z1a"
 make setup
 ```
 
-This creates the shared `.venv` and installs the Python package in editable mode.
+Setup validates:
+
+- the configured Python executable;
+- Python version;
+- Tkinter availability required by the local GUI.
+
+If Tkinter is missing, setup stops with an installation hint for the matching Python version.
+
+After validation, setup creates the shared `.venv` and installs the Python package in editable mode.
 
 ## Commands
 
 From the repository root:
 
-```bash
+```bash id="8bnbt5"
+make check-python
 make setup
 make python-install
 make python-cli
 make python-gui
-make swift-resolve
 make clean
 ```
 
 The root `Makefile` and `python/Makefile` use the same:
 
-```text
+```text id="0fegcb"
 .env
 .venv
 ```
+
+Swift dependencies are managed by Xcode / Swift Package Manager.
 
 ## Python
 
@@ -104,7 +114,7 @@ The Python package provides:
 
 Example:
 
-```python
+```python id="f7p1sq"
 from firebase_app_utilities import FirebaseProject
 from firebase_app_utilities.gui import FirebaseUtilitiesApp
 
@@ -125,7 +135,7 @@ See [`python/README.md`](python/README.md).
 
 A project-specific TOML file may contain:
 
-```toml
+```toml id="y7np8g"
 [project]
 project_id = "your-project-id"
 environment = "development"
@@ -146,21 +156,23 @@ Local configuration files and credentials should not be committed.
 
 The Swift Package lives in:
 
-```text
+```text id="4yc5h7"
 swift/
 ```
 
-Add it locally from:
+Add it locally through Xcode from:
 
-```text
+```text id="bq79ft"
 FirebaseAppUtilities/swift
 ```
 
 Then:
 
-```swift
+```swift id="920orv"
 import FirebaseAppUtilities
 ```
+
+Xcode resolves and manages the Swift Package dependencies automatically.
 
 The package provides reusable Firebase integration for Apple applications, including Firestore, custom analytics, Functions, Auth, Storage, Remote Config, and environment configuration.
 
@@ -172,13 +184,13 @@ FirebaseAppUtilities can store custom analytics events directly in Firestore wit
 
 Default collection:
 
-```text
+```text id="wa7no7"
 analytics_events/{eventId}
 ```
 
 Example:
 
-```json
+```json id="x89wjc"
 {
   "name": "song_generated",
   "timestamp": "server timestamp",
@@ -196,7 +208,7 @@ Example:
 
 Shared contracts live in:
 
-```text
+```text id="wpa06s"
 schemas/
 ```
 
@@ -204,25 +216,25 @@ schemas/
 
 Reusable infrastructure belongs in:
 
-```text
+```text id="jf0bl0"
 FirebaseAppUtilities
 ```
 
 Project-specific backend tooling belongs in repositories such as:
 
-```text
+```text id="80s06i"
 ChordGenFirebase
 ```
 
 Application code belongs in:
 
-```text
+```text id="366l78"
 ChordGen
 ```
 
 The intended separation is:
 
-```text
+```text id="6denwn"
 FirebaseAppUtilities
     reusable Firebase infrastructure
 

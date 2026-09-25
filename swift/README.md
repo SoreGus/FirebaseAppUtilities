@@ -5,25 +5,30 @@ Swift Package for Apple applications that use Firebase through a small, reusable
 ## Goals
 
 - centralize Firebase startup and environment selection;
-- reduce repetitive Firestore CRUD code;
-- provide a custom Firestore-backed analytics pipeline;
-- expose small wrappers for Auth, Functions, Storage and Remote Config;
-- keep application code dependent on FirebaseAppUtilities rather than scattering Firebase implementation details everywhere.
+- reduce repetitive Firestore code;
+- provide Firestore-backed custom analytics;
+- expose small wrappers for Auth, Functions, Storage, and Remote Config;
+- keep application code dependent on FirebaseAppUtilities instead of scattering Firebase implementation details.
 
-The package does **not** try to hide every Firebase API. When an application needs advanced Firebase features it can still use the official SDK directly.
+The package does not try to hide every Firebase API. Applications can still use the official Firebase SDK directly when needed.
 
 ## Add the package
 
 During local development, add the `swift/` directory as a local Swift Package in Xcode.
 
-When the repository is published, it can be referenced as a normal remote Swift package.
+Xcode resolves and manages Firebase package dependencies automatically.
+
+When the repository is published, the package can be referenced as a normal remote Swift Package.
 
 ## Configure Firebase
 
-Add the correct `GoogleService-Info.plist` to the application target. Do not add it to this package or commit it to source control.
+Add the correct `GoogleService-Info.plist` to the application target.
+
+Do not place credentials inside FirebaseAppUtilities or commit them to source control.
 
 ```swift
 import FirebaseAppUtilities
+import SwiftUI
 
 @main
 struct ChordGenApp: App {
@@ -41,7 +46,7 @@ struct ChordGenApp: App {
 }
 ```
 
-If the app uses different Firebase plist files per environment, resolve the file URL in the app and pass it explicitly:
+If the app uses different Firebase configurations per environment, provide the corresponding options file explicitly:
 
 ```swift
 try FirebaseAppUtilities.configure(
@@ -50,7 +55,7 @@ try FirebaseAppUtilities.configure(
 )
 ```
 
-## Firestore repository
+## Firestore
 
 ```swift
 struct Song: Codable, Identifiable, Sendable {
@@ -58,9 +63,18 @@ struct Song: Codable, Identifiable, Sendable {
     let title: String
 }
 
-let repository = FirestoreRepository<Song>(collection: "songs")
-try await repository.set(song, id: song.id)
-let loaded = try await repository.get(id: song.id)
+let repository = FirestoreRepository<Song>(
+    collection: "songs"
+)
+
+try await repository.set(
+    song,
+    id: song.id
+)
+
+let loaded = try await repository.get(
+    id: song.id
+)
 ```
 
 ## Custom analytics
@@ -72,8 +86,11 @@ enum ChordGenEvent: AnalyticsEvent {
 
     var name: String {
         switch self {
-        case .appOpened: "app_opened"
-        case .songGenerated: "song_generated"
+        case .appOpened:
+            "app_opened"
+
+        case .songGenerated:
+            "song_generated"
         }
     }
 
@@ -81,24 +98,59 @@ enum ChordGenEvent: AnalyticsEvent {
         switch self {
         case .appOpened:
             [:]
+
         case .songGenerated(let genre):
-            ["genre": .string(genre)]
+            [
+                "genre": .string(genre)
+            ]
         }
     }
 }
+```
 
+Track an event:
+
+```swift
 try await FirebaseAppUtilities.analytics.track(
-    ChordGenEvent.songGenerated(genre: "rock")
+    ChordGenEvent.songGenerated(
+        genre: "rock"
+    )
 )
 ```
 
-Events are written to `analytics_events` by default and can be inspected by the Python tooling.
+Events are stored in `analytics_events` by default and can be inspected by the Python tooling.
 
 ## Other services
 
 ```swift
 let user = FirebaseAppUtilities.auth.currentUser
-let result = try await FirebaseAppUtilities.functions.call("generateSong", data: payload)
-let data = try await FirebaseAppUtilities.storage.download(path: "exports/song.mid")
-let enabled = try await FirebaseAppUtilities.remoteConfig.bool("new_editor")
 ```
+
+```swift
+let result = try await FirebaseAppUtilities.functions.call(
+    "generateSong",
+    data: payload
+)
+```
+
+```swift
+let data = try await FirebaseAppUtilities.storage.download(
+    path: "exports/song.mid"
+)
+```
+
+```swift
+let enabled = try await FirebaseAppUtilities.remoteConfig.bool(
+    "new_editor"
+)
+```
+
+## Intended usage
+
+Application code should depend primarily on:
+
+```swift
+import FirebaseAppUtilities
+```
+
+FirebaseAppUtilities handles the reusable Firebase integration layer, while project-specific models and business logic remain inside the application.
