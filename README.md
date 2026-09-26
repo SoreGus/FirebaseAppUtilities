@@ -1,18 +1,18 @@
 # FirebaseAppUtilities
 
-FirebaseAppUtilities is a reusable Firebase toolkit composed of:
+Reusable Firebase tooling for Python and Apple platforms.
 
-- a **Python library**;
-- a **CLI**;
-- a reusable **local GUI**;
-- a **Swift Package** for Apple apps;
-- shared schemas for conventions such as Firestore-backed analytics.
+It provides:
 
-The goal is to centralize reusable Firebase infrastructure so project-specific repositories only need configuration and domain-specific logic.
+- a Python library;
+- a CLI;
+- a reusable desktop GUI built with PySide6;
+- a Swift Package;
+- shared schemas for custom Firestore-backed analytics.
 
-## Repository layout
+## Structure
 
-```text id="h2t0w0"
+```text
 FirebaseAppUtilities/
 ├── python/
 ├── swift/
@@ -25,39 +25,17 @@ FirebaseAppUtilities/
 └── README.md
 ```
 
-## Architecture
-
-```text id="160sw3"
-ChordGen
-   |
-   | Swift Package
-   v
-FirebaseAppUtilities
-   |
-   v
-Firebase / Firestore
-   ^
-   |
-   | Python library / CLI / GUI
-   |
-ChordGenFirebase
-```
-
-`ChordGen` uses the Swift Package.
-
-`ChordGenFirebase` uses the Python package and can configure or extend the reusable GUI and tooling.
-
 ## Setup
 
 Create the local environment file:
 
-```bash id="3nkbl8"
+```bash
 cp .env-example .env
 ```
 
 Example:
 
-```env id="50ys9r"
+```env
 PYTHON_BIN=/opt/homebrew/bin/python3
 VENV_DIR=.venv
 FIREBASE_ENVIRONMENT=development
@@ -65,114 +43,107 @@ FIREBASE_ENVIRONMENT=development
 
 Then run:
 
-```bash id="6f4z1a"
+```bash
 make setup
 ```
 
-Setup validates:
+Useful commands:
 
-- the configured Python executable;
-- Python version;
-- Tkinter availability required by the local GUI.
-
-If Tkinter is missing, setup stops with an installation hint for the matching Python version.
-
-After validation, setup creates the shared `.venv` and installs the Python package in editable mode.
-
-## Commands
-
-From the repository root:
-
-```bash id="8bnbt5"
+```bash
 make check-python
-make setup
 make python-install
 make python-cli
 make python-gui
 make clean
 ```
 
-The root `Makefile` and `python/Makefile` use the same:
-
-```text id="0fegcb"
-.env
-.venv
-```
-
-Swift dependencies are managed by Xcode / Swift Package Manager.
-
 ## Python
 
 The Python package provides:
 
 - Firebase project connection;
-- Firestore inspection;
-- custom analytics queries;
+- Firestore access and inspection;
+- custom analytics queries and aggregation;
 - HTTP Functions access;
 - CLI tooling;
-- reusable GUI components.
+- a reusable PySide6 desktop GUI.
 
 Example:
 
-```python id="f7p1sq"
+```python
 from firebase_app_utilities import FirebaseProject
-from firebase_app_utilities.gui import FirebaseUtilitiesApp
+from firebase_app_utilities.gui import (
+    AnalyticsDashboardConfig,
+    AnalyticsMetric,
+    FirebaseUtilitiesApp,
+)
 
 project = FirebaseProject.from_toml(
     "firebase.local.toml"
 )
 
+analytics = AnalyticsDashboardConfig(
+    title="Application Analytics",
+    metrics=(
+        AnalyticsMetric.event(
+            "App Opens",
+            "app_opened",
+        ),
+    ),
+)
+
 FirebaseUtilitiesApp(
-    project=project
+    project=project,
+    analytics=analytics,
 ).run()
 ```
 
-The GUI is part of FirebaseAppUtilities itself and can be reused or extended by project-specific repositories.
+Project-specific repositories declare what should be displayed; `FirebaseAppUtilities` owns the reusable GUI and Firebase logic.
 
 See [`python/README.md`](python/README.md).
 
-## Project configuration
+## Configuration
 
-A project-specific TOML file may contain:
+Example TOML:
 
-```toml id="y7np8g"
+```toml
 [project]
 project_id = "your-project-id"
 environment = "development"
-credentials = "/absolute/path/to/service-account.json"
+
+# Optional.
+# credentials = "secrets/firebase-adminsdk.json"
 
 [analytics]
 collection = "analytics_events"
 
 [functions]
-base_url = "https://us-central1-your-project.cloudfunctions.net"
+# base_url = "https://us-central1-your-project.cloudfunctions.net"
 ```
 
-If `credentials` is omitted, Firebase Admin can use Application Default Credentials.
+Relative credential paths are resolved from the TOML file directory.
 
 Local configuration files and credentials should not be committed.
 
 ## Swift
 
-The Swift Package lives in:
+The Swift Package is located in:
 
-```text id="4yc5h7"
+```text
 swift/
 ```
 
-Add it locally through Xcode from:
+Add it through Xcode using the local package path:
 
-```text id="bq79ft"
+```text
 FirebaseAppUtilities/swift
 ```
 
 Then:
 
-```swift id="920orv"
+```swift
 import FirebaseAppUtilities
 ```
-
-Xcode resolves and manages the Swift Package dependencies automatically.
 
 The package provides reusable Firebase integration for Apple applications, including Firestore, custom analytics, Functions, Auth, Storage, Remote Config, and environment configuration.
 
@@ -180,25 +151,23 @@ See [`swift/README.md`](swift/README.md).
 
 ## Custom analytics
 
-FirebaseAppUtilities can store custom analytics events directly in Firestore without depending on Firebase Analytics.
+Custom analytics events can be stored directly in Firestore.
 
 Default collection:
 
-```text id="wa7no7"
+```text
 analytics_events/{eventId}
 ```
 
 Example:
 
-```json id="x89wjc"
+```json
 {
   "name": "song_generated",
   "timestamp": "server timestamp",
   "sessionId": "...",
   "userId": "...",
   "platform": "iOS",
-  "appVersion": "1.0",
-  "buildNumber": "42",
   "environment": "production",
   "properties": {
     "genre": "rock"
@@ -208,38 +177,23 @@ Example:
 
 Shared contracts live in:
 
-```text id="wpa06s"
+```text
 schemas/
 ```
 
-## Project-specific repositories
+## Architecture
 
-Reusable infrastructure belongs in:
-
-```text id="jf0bl0"
-FirebaseAppUtilities
-```
-
-Project-specific backend tooling belongs in repositories such as:
-
-```text id="80s06i"
-ChordGenFirebase
-```
-
-Application code belongs in:
-
-```text id="366l78"
-ChordGen
-```
-
-The intended separation is:
-
-```text id="6denwn"
+```text
 FirebaseAppUtilities
     reusable Firebase infrastructure
+    Python CLI and desktop GUI
+    Swift Package
+    shared schemas
 
 ChordGenFirebase
-    project configuration and backend tooling
+    project configuration
+    event definitions
+    analytics dashboard configuration
 
 ChordGen
     Apple application

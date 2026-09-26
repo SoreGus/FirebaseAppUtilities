@@ -1,4 +1,9 @@
-from .config import AnalyticsConfig, FunctionsConfig, ProjectConfig, UtilitiesConfig
+from .config import (
+    AnalyticsConfig,
+    FunctionsConfig,
+    ProjectConfig,
+    UtilitiesConfig,
+)
 from .project import FirebaseProject
 
 __all__ = [

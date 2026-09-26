@@ -15,7 +15,7 @@ help:
 	@echo "FirebaseAppUtilities"
 	@echo ""
 	@echo "  make setup           Validate environment, create virtualenv and install Python package"
-	@echo "  make check-python    Validate Python and Tkinter"
+	@echo "  make check-python    Validate Python"
 	@echo "  make python-install  Install the Python package locally"
 	@echo "  make python-cli      Show the Python CLI help"
 	@echo "  make python-gui      Open the Python GUI"
@@ -24,8 +24,8 @@ help:
 check-python:
 	@echo "Checking Python..."
 	@$(PYTHON_BIN) --version
-	@echo "Checking Tkinter..."
-	@$(PYTHON_BIN) -c "import sys; exec('try:\\n import tkinter\\n print(\"Tkinter: OK\")\\nexcept Exception as error:\\n version = f\"{sys.version_info.major}.{sys.version_info.minor}\"\\n print()\\n print(\"ERROR: Tkinter is not available for the configured Python.\")\\n print()\\n print(f\"Python: {sys.executable}\")\\n print(f\"Version: {version}\")\\n print(f\"Reason: {error}\")\\n print()\\n print(\"If this Python was installed with Homebrew, install:\")\\n print(f\"  brew install python-tk@{version}\")\\n print()\\n sys.exit(1)')"
+	@$(PYTHON_BIN) -c "import sys; assert sys.version_info >= (3, 12), f'Python 3.12+ required, found {sys.version.split()[0]}'"
+	@echo "Python: OK"
 
 setup: check-python
 	@echo ""

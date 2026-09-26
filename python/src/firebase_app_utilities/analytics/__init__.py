@@ -1,3 +1,5 @@
 from .service import AnalyticsService
 
-__all__ = ["AnalyticsService"]
+__all__ = [
+    "AnalyticsService",
+]

@@ -22,7 +22,7 @@ help:
 	@echo "  make install   Install package in editable mode"
 	@echo "  make uninstall Uninstall the Python package"
 	@echo "  make cli       Show CLI help"
-	@echo "  make gui       Open the local GUI"
+	@echo "  make gui       Open the desktop GUI"
 	@echo "  make build     Build wheel and source distribution"
 	@echo "  make clean     Remove Python build artifacts"
 

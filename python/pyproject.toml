@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "firebase-app-utilities"
-version = "0.1.0"
-description = "Reusable Firebase tooling, project inspection, custom analytics and local GUI utilities."
+version = "0.2.0"
+description = "Reusable Firebase tooling, analytics, project inspection and modern desktop utilities."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -14,7 +14,8 @@ authors = [
 ]
 dependencies = [
   "firebase-admin>=6.5,<8",
-  "requests>=2.32,<3"
+  "requests>=2.32,<3",
+  "PySide6>=6.8,<7"
 ]
 
 [project.scripts]

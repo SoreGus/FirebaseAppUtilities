@@ -31,20 +31,33 @@ class UtilitiesConfig:
     @classmethod
     def from_toml(cls, path: str | Path) -> "UtilitiesConfig":
         config_path = Path(path).expanduser().resolve()
+
+        if not config_path.exists():
+            raise FileNotFoundError(f"Configuration not found: {config_path}")
+
         with config_path.open("rb") as handle:
             raw = tomllib.load(handle)
 
         project_raw = raw.get("project", {})
         project_id = str(project_raw.get("project_id", "")).strip()
+
         if not project_id:
             raise ValueError("[project].project_id is required")
 
         credentials_raw = project_raw.get("credentials")
         credentials = None
+
         if credentials_raw:
             candidate = Path(str(credentials_raw)).expanduser()
+
             if not candidate.is_absolute():
                 candidate = (config_path.parent / candidate).resolve()
+
+            if not candidate.exists():
+                raise FileNotFoundError(
+                    f"Firebase credentials not found: {candidate}"
+                )
+
             credentials = candidate
 
         analytics_raw = raw.get("analytics", {})
@@ -53,11 +66,21 @@ class UtilitiesConfig:
         return cls(
             project=ProjectConfig(
                 project_id=project_id,
-                environment=str(project_raw.get("environment", "development")),
+                environment=str(
+                    project_raw.get(
+                        "environment",
+                        "development",
+                    )
+                ),
                 credentials=credentials,
             ),
             analytics=AnalyticsConfig(
-                collection=str(analytics_raw.get("collection", "analytics_events"))
+                collection=str(
+                    analytics_raw.get(
+                        "collection",
+                        "analytics_events",
+                    )
+                )
             ),
             functions=FunctionsConfig(
                 base_url=(

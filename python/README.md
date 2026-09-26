@@ -1,120 +1,130 @@
 # FirebaseAppUtilities Python
 
-Reusable Python library and local tooling for Firebase-backed applications.
+Reusable Firebase tooling and a modern PySide6 desktop workspace for Firebase-backed applications.
 
-It provides:
+## What it provides
 
-- Firebase project connection and configuration;
-- Firestore inspection;
+- Firebase project configuration and Admin SDK connection;
+- Firestore browsing and document inspection;
 - Firestore-backed custom analytics;
+- analytics metrics, rankings, activity history and recent events;
 - HTTP Functions access;
 - CLI tooling;
-- a reusable and extensible Tk GUI.
+- a reusable PySide6 desktop interface;
+- declarative analytics configuration for consuming projects.
 
-The CLI and GUI are thin layers over the same Python library.
-
-## Environment
-
-The Python package uses the repository-level:
-
-```text id="uj1g0x"
-FirebaseAppUtilities/
-├── .env
-├── .env-example
-├── .venv/
-└── python/
-```
-
-Create the local environment file from the repository root:
-
-```bash id="kwm93f"
-cp .env-example .env
-```
-
-Example:
-
-```env id="j2z9t1"
-PYTHON_BIN=/opt/homebrew/bin/python3
-VENV_DIR=.venv
-FIREBASE_ENVIRONMENT=development
-```
+The Firebase services are independent from the GUI. Projects such as `ChordGenFirebase` only declare what they want to show; FirebaseAppUtilities owns the rendering, navigation and interaction model.
 
 ## Install
 
-Recommended from the repository root:
+From the repository root:
 
-```bash id="m0qzcb"
+```bash
 make setup
-```
-
-Setup validates:
-
-- the configured Python executable;
-- Python version;
-- Tkinter availability required by the GUI.
-
-If Tkinter is missing, setup stops and shows the matching installation hint.
-
-After validation, setup creates the shared `.venv` and installs the package in editable mode.
-
-You can validate the Python environment separately with:
-
-```bash id="418oty"
-make check-python
-```
-
-You can also install only the Python package:
-
-```bash id="qjt7xf"
 make python-install
 ```
 
 Or from `python/`:
 
-```bash id="ai8ph9"
+```bash
 make install
 ```
 
-## Configuration
+The package uses the repository-level `.venv`.
 
-Project-specific Firebase configuration is stored in TOML.
+## Dependencies
 
-Example:
+The desktop GUI uses PySide6. Tkinter is no longer used.
 
-```toml id="mfu3y5"
+```toml
+PySide6>=6.8,<7
+```
+
+## Project configuration
+
+```toml
 [project]
 project_id = "your-project-id"
 environment = "development"
-credentials = "/absolute/path/to/service-account.json"
+
+# Relative paths are resolved from the TOML directory.
+# credentials = "secrets/firebase-adminsdk.json"
 
 [analytics]
 collection = "analytics_events"
 
 [functions]
-base_url = "https://us-central1-your-project.cloudfunctions.net"
+# base_url = "https://us-central1-your-project-id.cloudfunctions.net"
 ```
 
-`credentials` and `base_url` are optional.
+If credentials are omitted, Firebase Admin can use Application Default Credentials.
 
-If `credentials` is omitted, Firebase Admin can use Application Default Credentials.
+## Declarative analytics GUI
+
+A consuming project can configure analytics without implementing UI code:
+
+```python
+from firebase_app_utilities import FirebaseProject
+from firebase_app_utilities.gui import (
+    AnalyticsDashboardConfig,
+    AnalyticsMetric,
+    FirebaseUtilitiesApp,
+    PropertyRanking,
+)
+
+project = FirebaseProject.from_toml(
+    "config/firebase.local.toml"
+)
+
+analytics = AnalyticsDashboardConfig(
+    title="My App Analytics",
+    metrics=(
+        AnalyticsMetric.event(
+            "App Opens",
+            "app_opened",
+        ),
+        AnalyticsMetric.event(
+            "Items Selected",
+            "item_selected",
+        ),
+    ),
+    rankings=(
+        PropertyRanking(
+            title="Top Items",
+            event_name="item_selected",
+            property_key="item",
+        ),
+    ),
+)
+
+FirebaseUtilitiesApp(
+    project=project,
+    title="My App Firebase",
+    analytics=analytics,
+).run()
+```
+
+## Desktop workspace
+
+The GUI is analytics-first and uses a persistent left navigation rail:
+
+- Dashboard — metrics, activity chart, rankings and recent events;
+- Events — filtering, search and event inspector;
+- Firestore — collection browser, document list and document inspector;
+- Functions — HTTP function invocation when configured;
+- Project — connection and service configuration summary.
+
+The main workspace does not expose the local TOML path or connection controls once the project is connected.
 
 ## CLI
 
-Show help:
-
-```bash id="r7q44t"
+```bash
 firebase-app-utils --help
-```
-
-Or from the repository root:
-
-```bash id="t0ifuf"
-make python-cli
 ```
 
 Examples:
 
-```bash id="y65fgr"
+```bash
 firebase-app-utils status \
     --config ./firebase.local.toml
 
@@ -126,103 +136,17 @@ firebase-app-utils documents users \
     --config ./firebase.local.toml
 
 firebase-app-utils analytics \
-    --event song_generated \
+    --event app_opened \
     --limit 50 \
-    --config ./firebase.local.toml
-
-firebase-app-utils function myFunction \
-    --method POST \
-    --json '{"hello":"world"}' \
     --config ./firebase.local.toml
 
 firebase-app-utils gui \
     --config ./firebase.local.toml
 ```
 
-## GUI
-
-The GUI is part of FirebaseAppUtilities and is designed to be reused by project-specific repositories.
-
-Open the generic GUI from the repository root:
-
-```bash id="viwky5"
-make python-gui
-```
-
-A consuming project can launch it with minimal code:
-
-```python id="ab406t"
-from firebase_app_utilities import FirebaseProject
-from firebase_app_utilities.gui import FirebaseUtilitiesApp
-
-project = FirebaseProject.from_toml(
-    "firebase.local.toml"
-)
-
-FirebaseUtilitiesApp(
-    project=project
-).run()
-```
-
-Projects can extend the GUI with project-specific screens or actions while keeping generic Firebase functionality inside FirebaseAppUtilities.
-
-## Library usage
-
-```python id="hbzayf"
-from firebase_app_utilities import FirebaseProject
-
-project = FirebaseProject.from_toml(
-    "firebase.local.toml"
-)
-
-print(
-    project.firestore.list_collections()
-)
-
-print(
-    project.analytics.list_events(
-        limit=20
-    )
-)
-```
-
-## Project-specific tooling
-
-Projects such as `ChordGenFirebase` should depend on this package instead of copying its implementation.
-
-Example:
-
-```text id="fnn4pa"
-ChordGenFirebase/
-├── config/
-├── dashboards/
-├── functions/
-├── scripts/
-├── app.py
-└── pyproject.toml
-```
-
-The intended separation is:
-
-```text id="fjs07m"
-FirebaseAppUtilities
-    reusable Python API
-    Firebase services
-    CLI
-    reusable GUI
-
-ChordGenFirebase
-    project configuration
-    functions
-    dashboards
-    project-specific extensions
-```
-
 ## Make commands
 
-From `python/`:
-
-```bash id="d0u8hh"
+```bash
 make help
 make venv
 make install
@@ -231,11 +155,4 @@ make cli
 make gui
 make build
 make clean
-```
-
-These commands use the shared:
-
-```text id="egvcrv"
-../.env
-../.venv
 ```

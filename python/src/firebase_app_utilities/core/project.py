@@ -25,32 +25,53 @@ class FirebaseProject:
             self._firestore_client,
             collection=config.analytics.collection,
         )
-        self.functions = FunctionsService(config.functions.base_url)
+        self.functions = FunctionsService(
+            config.functions.base_url
+        )
 
     @classmethod
-    def from_toml(cls, path: str | Path) -> "FirebaseProject":
-        return cls(UtilitiesConfig.from_toml(path))
+    def from_toml(
+        cls,
+        path: str | Path,
+    ) -> "FirebaseProject":
+        return cls(
+            UtilitiesConfig.from_toml(path)
+        )
 
     @staticmethod
-    def _initialize_app(config: UtilitiesConfig) -> firebase_admin.App:
-        app_name = f"firebase-app-utilities:{config.project.project_id}:{config.project.environment}"
+    def _initialize_app(
+        config: UtilitiesConfig,
+    ) -> firebase_admin.App:
+        app_name = (
+            "firebase-app-utilities:"
+            f"{config.project.project_id}:"
+            f"{config.project.environment}"
+        )
 
         try:
             return firebase_admin.get_app(app_name)
         except ValueError:
             pass
 
-        options: dict[str, Any] = {"projectId": config.project.project_id}
+        options: dict[str, Any] = {
+            "projectId": config.project.project_id
+        }
 
         if config.project.credentials:
-            credential = credentials.Certificate(str(config.project.credentials))
+            credential = credentials.Certificate(
+                str(config.project.credentials)
+            )
+
             return firebase_admin.initialize_app(
                 credential,
                 options=options,
                 name=app_name,
             )
 
-        return firebase_admin.initialize_app(options=options, name=app_name)
+        return firebase_admin.initialize_app(
+            options=options,
+            name=app_name,
+        )
 
     @property
     def project_id(self) -> str:

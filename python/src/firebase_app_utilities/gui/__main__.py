@@ -1,3 +1,3 @@
 from .app import FirebaseUtilitiesApp
 
-FirebaseUtilitiesApp().run()
+raise SystemExit(FirebaseUtilitiesApp().run())
