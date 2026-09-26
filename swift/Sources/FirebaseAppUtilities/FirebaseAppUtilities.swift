@@ -1,7 +1,7 @@
 import FirebaseCore
 import Foundation
 
-public enum FirebaseAppUtilities {
+public final class FirebaseAppUtilities {
     private static let state = FirebaseUtilitiesState()
 
     public static var environment: FirebaseEnvironment {
@@ -10,10 +10,16 @@ public enum FirebaseAppUtilities {
 
     public static let auth = FirebaseAuthService()
     public static let firestore = FirebaseFirestoreService()
-    public static let analytics = FirestoreAnalyticsService()
+    public let analytics: any FirestoreAnalyticsServiceProtocol
     public static let functions = FirebaseFunctionsService()
     public static let remoteConfig = FirebaseRemoteConfigService()
     public static let storage = FirebaseStorageService()
+    
+    public init(
+        analytics: FirestoreAnalyticsServiceProtocol = FirestoreAnalyticsService()
+    ) {
+        self.analytics = analytics
+    }
 
     public static func configure(
         environment: FirebaseEnvironment = .production,
