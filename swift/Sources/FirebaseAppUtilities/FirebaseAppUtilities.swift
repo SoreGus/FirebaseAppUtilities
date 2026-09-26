@@ -19,19 +19,28 @@ public enum FirebaseAppUtilities {
         environment: FirebaseEnvironment = .production,
         optionsFileURL: URL? = nil
     ) throws {
-        state.setEnvironment(environment)
-
-        guard FirebaseApp.app() == nil else {
+        guard !state.isConfigured else {
             return
         }
 
+        state.setEnvironment(environment)
+
         if let optionsFileURL {
-            guard let options = FirebaseOptions(contentsOfFile: optionsFileURL.path) else {
-                throw FirebaseAppUtilitiesError.invalidOptionsFile(optionsFileURL)
+            guard let options = FirebaseOptions(
+                contentsOfFile: optionsFileURL.path
+            ) else {
+                throw FirebaseAppUtilitiesError.invalidOptionsFile(
+                    optionsFileURL
+                )
             }
-            FirebaseApp.configure(options: options)
+
+            FirebaseApp.configure(
+                options: options
+            )
         } else {
             FirebaseApp.configure()
         }
+
+        state.setConfigured()
     }
 }
