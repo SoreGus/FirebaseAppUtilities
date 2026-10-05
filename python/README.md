@@ -1,19 +1,20 @@
 # FirebaseAppUtilities Python
 
-Reusable Firebase tooling and a modern PySide6 desktop workspace for Firebase-backed applications.
+Reusable Firebase tooling and a PySide6 desktop workspace for Firebase-backed applications.
 
 ## What it provides
 
 - Firebase project configuration and Admin SDK connection;
-- Firestore browsing and document inspection;
-- Firestore-backed custom analytics;
-- analytics metrics, rankings, activity history and recent events;
-- HTTP Functions access;
-- CLI tooling;
-- a reusable PySide6 desktop interface;
-- declarative analytics configuration for consuming projects.
+- cost-aware Firestore custom analytics;
+- Firestore `count()` aggregation for cheap server-side counts;
+- persistent SQLite cache for immutable analytics/support records;
+- incremental synchronization that requests only newer documents;
+- declarative event definitions, filters and insights;
+- generic append-only collection support;
+- HTTP Functions access and CLI tooling;
+- reusable PySide6 desktop UI.
 
-The Firebase services are independent from the GUI. Projects such as `ChordGenFirebase` only declare what they want to show; FirebaseAppUtilities owns the rendering, navigation and interaction model.
+The GUI never performs a Firestore read merely because the application opened or the user changed screens. Network reads happen only after an explicit action such as **Sync new**, **Server count**, or another project-defined query.
 
 ## Install
 
@@ -30,24 +31,12 @@ Or from `python/`:
 make install
 ```
 
-The package uses the repository-level `.venv`.
-
-## Dependencies
-
-The desktop GUI uses PySide6. Tkinter is no longer used.
-
-```toml
-PySide6>=6.8,<7
-```
-
 ## Project configuration
 
 ```toml
 [project]
 project_id = "your-project-id"
 environment = "development"
-
-# Relative paths are resolved from the TOML directory.
 # credentials = "secrets/firebase-adminsdk.json"
 
 [analytics]
@@ -61,38 +50,32 @@ If credentials are omitted, Firebase Admin can use Application Default Credentia
 
 ## Declarative analytics GUI
 
-A consuming project can configure analytics without implementing UI code:
-
 ```python
 from firebase_app_utilities import FirebaseProject
 from firebase_app_utilities.gui import (
     AnalyticsDashboardConfig,
-    AnalyticsMetric,
+    AnalyticsEventDefinition,
+    AnalyticsInsight,
+    AnalyticsProperty,
     FirebaseUtilitiesApp,
-    PropertyRanking,
 )
 
-project = FirebaseProject.from_toml(
-    "config/firebase.local.toml"
-)
+project = FirebaseProject.from_toml("config/firebase.local.toml")
 
 analytics = AnalyticsDashboardConfig(
     title="My App Analytics",
-    metrics=(
-        AnalyticsMetric.event(
-            "App Opens",
-            "app_opened",
-        ),
-        AnalyticsMetric.event(
-            "Items Selected",
-            "item_selected",
-        ),
-    ),
-    rankings=(
-        PropertyRanking(
-            title="Top Items",
-            event_name="item_selected",
-            property_key="item",
+    events=(
+        AnalyticsEventDefinition(
+            name="item_selected",
+            title="Item Selected",
+            properties=(
+                AnalyticsProperty("item", "Item"),
+                AnalyticsProperty("is_custom", "Custom", kind="bool"),
+            ),
+            insights=(
+                AnalyticsInsight.top_values("Top Items", "item"),
+                AnalyticsInsight.bool_distribution("Custom", "is_custom"),
+            ),
         ),
     ),
 )
@@ -104,44 +87,30 @@ FirebaseUtilitiesApp(
 ).run()
 ```
 
+## Local cache and sync
+
+Cached Firestore documents are stored under:
+
+```text
+~/.firebase-app-utilities/<project>-<environment>.sqlite3
+```
+
+Analytics and append-only collections are treated as immutable records. Each explicit sync stores the newest timestamp and subsequent syncs request only newer records. Filters and insights over already-synchronized data are computed locally and cost zero Firestore reads.
+
 ## Desktop workspace
 
-The GUI is analytics-first and uses a persistent left navigation rail:
+- **Dashboard** — cached counts and activity; explicit sync only;
+- **Analytics** — event-type navigation, per-property filters, server `count()`, incremental sync, local insights and recent records;
+- **Support** — optional append-only collection UI supplied by the consuming project;
+- **Functions** — HTTP function invocation when configured;
+- **Project** — project and cache information.
 
-- Dashboard — metrics, activity chart, rankings and recent events;
-- Events — filtering, search and event inspector;
-- Firestore — collection browser, document list and document inspector;
-- Functions — HTTP function invocation when configured;
-- Project — connection and service configuration summary.
-
-The main workspace does not expose the local TOML path or connection controls once the project is connected.
+The generic raw Firestore browser is no longer part of the main navigation.
 
 ## CLI
 
 ```bash
 firebase-app-utils --help
-```
-
-Examples:
-
-```bash
-firebase-app-utils status \
-    --config ./firebase.local.toml
-
-firebase-app-utils collections \
-    --config ./firebase.local.toml
-
-firebase-app-utils documents users \
-    --limit 20 \
-    --config ./firebase.local.toml
-
-firebase-app-utils analytics \
-    --event app_opened \
-    --limit 50 \
-    --config ./firebase.local.toml
-
-firebase-app-utils gui \
-    --config ./firebase.local.toml
 ```
 
 ## Make commands

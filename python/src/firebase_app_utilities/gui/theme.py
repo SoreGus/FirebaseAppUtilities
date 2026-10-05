@@ -61,7 +61,8 @@ QFrame#TopBar {{
 }}
 
 QFrame#Card,
-QFrame#Panel {{
+QFrame#Panel,
+QFrame#ListCard {{
     background: {SURFACE};
     border: 1px solid {BORDER};
     border-radius: 14px;

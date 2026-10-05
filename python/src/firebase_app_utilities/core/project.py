@@ -7,7 +7,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 from ..analytics.service import AnalyticsService
-from ..firestore.service import FirestoreService
+from ..cache import LocalStore
+from ..firestore import AppendOnlyCollectionService, FirestoreService
 from ..functions.service import FunctionsService
 from .config import UtilitiesConfig
 
@@ -19,59 +20,42 @@ class FirebaseProject:
         self.config = config
         self._app = self._initialize_app(config)
         self._firestore_client = firestore.client(app=self._app)
-
+        cache_path = (
+            Path.home()
+            / ".firebase-app-utilities"
+            / f"{config.project.project_id}-{config.project.environment}.sqlite3"
+        )
+        self.local_store = LocalStore(cache_path)
         self.firestore = FirestoreService(self._firestore_client)
+        self.append_only = AppendOnlyCollectionService(self._firestore_client, self.local_store)
         self.analytics = AnalyticsService(
             self._firestore_client,
+            self.local_store,
             collection=config.analytics.collection,
         )
-        self.functions = FunctionsService(
-            config.functions.base_url
-        )
+        self.functions = FunctionsService(config.functions.base_url)
 
     @classmethod
-    def from_toml(
-        cls,
-        path: str | Path,
-    ) -> "FirebaseProject":
-        return cls(
-            UtilitiesConfig.from_toml(path)
-        )
+    def from_toml(cls, path: str | Path) -> "FirebaseProject":
+        return cls(UtilitiesConfig.from_toml(path))
 
     @staticmethod
-    def _initialize_app(
-        config: UtilitiesConfig,
-    ) -> firebase_admin.App:
+    def _initialize_app(config: UtilitiesConfig) -> firebase_admin.App:
         app_name = (
             "firebase-app-utilities:"
             f"{config.project.project_id}:"
             f"{config.project.environment}"
         )
-
         try:
             return firebase_admin.get_app(app_name)
         except ValueError:
             pass
 
-        options: dict[str, Any] = {
-            "projectId": config.project.project_id
-        }
-
+        options: dict[str, Any] = {"projectId": config.project.project_id}
         if config.project.credentials:
-            credential = credentials.Certificate(
-                str(config.project.credentials)
-            )
-
-            return firebase_admin.initialize_app(
-                credential,
-                options=options,
-                name=app_name,
-            )
-
-        return firebase_admin.initialize_app(
-            options=options,
-            name=app_name,
-        )
+            credential = credentials.Certificate(str(config.project.credentials))
+            return firebase_admin.initialize_app(credential, options=options, name=app_name)
+        return firebase_admin.initialize_app(options=options, name=app_name)
 
     @property
     def project_id(self) -> str:
@@ -85,11 +69,8 @@ class FirebaseProject:
         return {
             "project_id": self.project_id,
             "environment": self.environment,
-            "credentials": (
-                str(self.config.project.credentials)
-                if self.config.project.credentials
-                else "application-default"
-            ),
+            "credentials": str(self.config.project.credentials) if self.config.project.credentials else "application-default",
             "analytics_collection": self.config.analytics.collection,
             "functions_base_url": self.config.functions.base_url,
+            "local_cache": str(self.local_store.path),
         }

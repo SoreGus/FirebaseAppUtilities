@@ -1,27 +1,26 @@
-from .app import (
-    FirebaseUtilitiesApp,
-    FirebaseUtilitiesWindow,
-    GuiExtension,
-    run_gui,
-)
+from .app import FirebaseUtilitiesApp, FirebaseUtilitiesWindow, GuiExtension, run_gui
 from .models import (
     AnalyticsDashboardConfig,
-    AnalyticsMetric,
-    PropertyRanking,
+    AnalyticsEventDefinition,
+    AnalyticsInsight,
+    AnalyticsProperty,
+    SupportConfig,
 )
 from .widgets import ActivityChart, EventTable, Inspector, MetricCard, RankingCard
 
 __all__ = [
     "ActivityChart",
     "AnalyticsDashboardConfig",
-    "AnalyticsMetric",
+    "AnalyticsEventDefinition",
+    "AnalyticsInsight",
+    "AnalyticsProperty",
     "EventTable",
     "FirebaseUtilitiesApp",
     "FirebaseUtilitiesWindow",
     "GuiExtension",
     "Inspector",
     "MetricCard",
-    "PropertyRanking",
     "RankingCard",
+    "SupportConfig",
     "run_gui",
 ]

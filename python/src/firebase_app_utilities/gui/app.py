@@ -20,14 +20,8 @@ from PySide6.QtWidgets import (
 )
 
 from ..core.project import FirebaseProject
-from .models import AnalyticsDashboardConfig
-from .screens import (
-    DashboardScreen,
-    EventsScreen,
-    FirestoreScreen,
-    FunctionsScreen,
-    ProjectScreen,
-)
+from .models import AnalyticsDashboardConfig, SupportConfig
+from .screens import DashboardScreen, EventsScreen, FunctionsScreen, ProjectScreen, SupportScreen
 from .theme import apply_theme
 
 GuiExtension = Callable[["FirebaseUtilitiesWindow"], None]
@@ -66,25 +60,15 @@ class NavigationRail(QFrame):
         self.nav_layout = layout
         layout.addStretch()
 
-    def add_item(
-        self,
-        key: str,
-        title: str,
-        on_click: Callable[[], None],
-        *,
-        bottom: bool = False,
-    ) -> QPushButton:
+    def add_item(self, key: str, title: str, on_click: Callable[[], None], *, bottom: bool = False) -> QPushButton:
         button = QPushButton(title)
         button.setObjectName("NavButton")
         button.setCheckable(True)
         button.clicked.connect(on_click)
-
         if bottom:
             self.nav_layout.addWidget(button)
         else:
-            stretch_index = self.nav_layout.count() - 1
-            self.nav_layout.insertWidget(stretch_index, button)
-
+            self.nav_layout.insertWidget(self.nav_layout.count() - 1, button)
         self.buttons[key] = button
         return button
 
@@ -100,11 +84,13 @@ class FirebaseUtilitiesWindow(QMainWindow):
         project: FirebaseProject,
         title: str = "FirebaseAppUtilities",
         analytics: AnalyticsDashboardConfig | None = None,
+        support: SupportConfig | None = None,
         extensions: Iterable[GuiExtension] = (),
     ):
         super().__init__()
         self.project = project
         self.analytics_config = analytics or AnalyticsDashboardConfig()
+        self.support_config = support
         self.extensions = tuple(extensions)
         self.setWindowTitle(title)
         self.resize(1360, 860)
@@ -119,54 +105,24 @@ class FirebaseUtilitiesWindow(QMainWindow):
 
         self.navigation = NavigationRail(title)
         root_layout.addWidget(self.navigation)
-
         self.stack = QStackedWidget()
         root_layout.addWidget(self.stack, 1)
 
         self._screens: dict[str, QWidget] = {}
         self._build_screens()
-
         for extension in self.extensions:
             extension(self)
-
         self.show_screen("dashboard")
 
     def _build_screens(self) -> None:
-        self.register_screen(
-            "dashboard",
-            "Dashboard",
-            DashboardScreen(self.project, self.analytics_config),
-        )
-        self.register_screen(
-            "events",
-            "Events",
-            EventsScreen(self.project, self.analytics_config),
-        )
-        self.register_screen(
-            "firestore",
-            "Firestore",
-            FirestoreScreen(self.project),
-        )
-        self.register_screen(
-            "functions",
-            "Functions",
-            FunctionsScreen(self.project),
-        )
-        self.register_screen(
-            "project",
-            "Project",
-            ProjectScreen(self.project),
-            bottom=True,
-        )
+        self.register_screen("dashboard", "Dashboard", DashboardScreen(self.project, self.analytics_config))
+        self.register_screen("events", "Analytics", EventsScreen(self.project, self.analytics_config))
+        if self.support_config is not None:
+            self.register_screen("support", self.support_config.title, SupportScreen(self.project, self.support_config))
+        self.register_screen("functions", "Functions", FunctionsScreen(self.project))
+        self.register_screen("project", "Project", ProjectScreen(self.project), bottom=True)
 
-    def register_screen(
-        self,
-        key: str,
-        title: str,
-        widget: QWidget,
-        *,
-        bottom: bool = False,
-    ) -> None:
+    def register_screen(self, key: str, title: str, widget: QWidget, *, bottom: bool = False) -> None:
         self._screens[key] = widget
         self.stack.addWidget(widget)
         self.navigation.add_item(
@@ -177,13 +133,13 @@ class FirebaseUtilitiesWindow(QMainWindow):
         )
 
     def show_screen(self, key: str) -> None:
+        """Navigation never performs network I/O. Screens query only on explicit user action."""
         widget = self._screens[key]
         self.stack.setCurrentWidget(widget)
         self.navigation.select(key)
-
-        refresh = getattr(widget, "refresh", None)
-        if callable(refresh):
-            refresh()
+        load_local = getattr(widget, "load_local", None)
+        if callable(load_local):
+            load_local()
 
 
 class ConnectionWindow(QMainWindow):
@@ -192,11 +148,13 @@ class ConnectionWindow(QMainWindow):
         *,
         title: str,
         analytics: AnalyticsDashboardConfig | None,
+        support: SupportConfig | None,
         extensions: Iterable[GuiExtension],
     ):
         super().__init__()
         self.title_text = title
         self.analytics = analytics
+        self.support = support
         self.extensions = tuple(extensions)
         self.child: FirebaseUtilitiesWindow | None = None
         self.setWindowTitle(title)
@@ -221,7 +179,7 @@ class ConnectionWindow(QMainWindow):
 
         body = QLabel(
             "Choose the local TOML configuration for the project you want to inspect. "
-            "The path is only used to establish the connection and is not shown in the workspace."
+            "Opening the workspace does not query Firestore automatically."
         )
         body.setObjectName("PageSubtitle")
         body.setWordWrap(True)
@@ -234,25 +192,19 @@ class ConnectionWindow(QMainWindow):
         layout.addWidget(button)
 
     def choose(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Firebase project configuration",
-            "",
-            "TOML (*.toml);;All files (*)",
-        )
+        path, _ = QFileDialog.getOpenFileName(self, "Firebase project configuration", "", "TOML (*.toml);;All files (*)")
         if not path:
             return
-
         try:
             project = FirebaseProject.from_toml(path)
         except Exception as error:
             QMessageBox.critical(self, "FirebaseAppUtilities", str(error))
             return
-
         self.child = FirebaseUtilitiesWindow(
             project=project,
             title=self.title_text,
             analytics=self.analytics,
+            support=self.support,
             extensions=self.extensions,
         )
         self.child.show()
@@ -267,12 +219,14 @@ class FirebaseUtilitiesApp:
         config_path: str | Path | None = None,
         title: str = "FirebaseAppUtilities",
         analytics: AnalyticsDashboardConfig | None = None,
+        support: SupportConfig | None = None,
         extensions: Iterable[GuiExtension] = (),
     ):
         self.project = project
         self.config_path = Path(config_path).expanduser() if config_path else None
         self.title = title
         self.analytics = analytics
+        self.support = support
         self.extensions = tuple(extensions)
 
     @classmethod
@@ -282,6 +236,7 @@ class FirebaseUtilitiesApp:
         *,
         title: str = "FirebaseAppUtilities",
         analytics: AnalyticsDashboardConfig | None = None,
+        support: SupportConfig | None = None,
         extensions: Iterable[GuiExtension] = (),
     ) -> "FirebaseUtilitiesApp":
         return cls(
@@ -289,16 +244,15 @@ class FirebaseUtilitiesApp:
             config_path=path,
             title=title,
             analytics=analytics,
+            support=support,
             extensions=extensions,
         )
 
     def run(self) -> int:
         app = QApplication.instance()
         owns_app = app is None
-
         if app is None:
             app = QApplication(sys.argv)
-
         apply_theme(app)
 
         project = self.project
@@ -310,17 +264,17 @@ class FirebaseUtilitiesApp:
                 project=project,
                 title=self.title,
                 analytics=self.analytics,
+                support=self.support,
                 extensions=self.extensions,
             )
         else:
             window = ConnectionWindow(
                 title=self.title,
                 analytics=self.analytics,
+                support=self.support,
                 extensions=self.extensions,
             )
-
         window.show()
-
         if owns_app:
             return app.exec()
         return 0
@@ -332,6 +286,7 @@ def run_gui(
     project: FirebaseProject | None = None,
     title: str = "FirebaseAppUtilities",
     analytics: AnalyticsDashboardConfig | None = None,
+    support: SupportConfig | None = None,
     extensions: Iterable[GuiExtension] = (),
 ) -> int:
     return FirebaseUtilitiesApp(
@@ -339,5 +294,6 @@ def run_gui(
         config_path=initial_config,
         title=title,
         analytics=analytics,
+        support=support,
         extensions=extensions,
     ).run()
