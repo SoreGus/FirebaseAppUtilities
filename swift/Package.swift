@@ -5,8 +5,7 @@ import PackageDescription
 let package = Package(
     name: "FirebaseAppUtilities",
     platforms: [
-        .iOS(.v17),
-        .macOS(.v15)
+        .iOS(.v17)
     ],
     products: [
         .library(
@@ -17,7 +16,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/firebase/firebase-ios-sdk.git",
-            from: "12.0.0"
+            from: "12.6.0"
         )
     ],
     targets: [
